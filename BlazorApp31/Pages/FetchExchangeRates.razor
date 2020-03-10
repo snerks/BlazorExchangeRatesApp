@@ -1,0 +1,83 @@
+﻿@page "/fetchexchangerates"
+
+@using BlazorApp31.Data
+@inject ExchangeRateService ExchangeRateService
+@inject BlazorApp31.Services.CurrencyIsoCodeService CurrencyIsoCodeService
+
+<h1>Exchange Rates</h1>
+
+<p>
+    This component demonstrates fetching data from a service: 
+    <a href="https://api.exchangeratesapi.io/">https://api.exchangeratesapi.io/</a>.
+</p>
+
+@if (exchangeRateLatestResponse == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @*<h2>Date: @exchangeRateLatestResponse.Date.ToString("dddd, dd MMM yyyy")</h2>*@
+
+    @*<h2>Base Currency: [@exchangeRateLatestResponse.Base]</h2>*@
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Source Currency Code</th>
+                <th>Symbol</th>
+                <th>Name</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                var wasSourceCurrencySymbolFound =
+                    CurrencyIsoCodeService
+                    .TryGetCurrencyRegionInfo(exchangeRateLatestResponse.Base, out System.Globalization.RegionInfo regionInfoSource);
+
+                        <tr>
+                            <td>@exchangeRateLatestResponse.Base</td>
+                            <td>@regionInfoSource.CurrencySymbol</td>
+                            <td>@regionInfoSource.CurrencyEnglishName</td>
+                            <td>@exchangeRateLatestResponse.Date.ToString("dddd, dd MMM yyyy")</td>
+                        </tr>
+            }
+        </tbody>
+    </table>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Target Currency Code</th>
+                <th>Symbol</th>
+                <th>Name</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var currencyIsoCode in exchangeRateLatestResponse.Rates.Keys.OrderBy(k => k))
+            {
+                var wasCurrencySymbolFound =
+                    CurrencyIsoCodeService
+                    .TryGetCurrencyRegionInfo(currencyIsoCode, out System.Globalization.RegionInfo regionInfo);
+
+                <tr>
+                    <td>@currencyIsoCode</td>
+                    <td>@regionInfo.CurrencySymbol</td>
+                    <td>@regionInfo.CurrencyEnglishName</td>
+                    <td>@exchangeRateLatestResponse.Rates[currencyIsoCode]</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private ExchangeRateLatestResponse exchangeRateLatestResponse;
+
+    protected override async Task OnInitializedAsync()
+    {
+        exchangeRateLatestResponse = await ExchangeRateService.GetLatestAsync();
+    }
+}
